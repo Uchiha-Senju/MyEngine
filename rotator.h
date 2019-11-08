@@ -116,7 +116,7 @@ class RotationMatrix : virtual public Rotator<RotationMatrix<num_type>, num_type
       matrix[2][2] = 1;
     }
     template <typename other_num_type>
-    RotationMatrix(other_num_type alpha = 0, other_num_type beta = 0, other_num_type gamma = 0, other_num_type mag = 1) {
+    RotationMatrix(other_num_type alpha, other_num_type beta, other_num_type gamma, other_num_type mag = 1) {
       // alpha (roll) : rotation angle in YZ plane i.e. around X
       // beta (pitch) : rotation angle in ZX plane i.e. around Y
       // gamma (yaw) : rotation angle in XY plane i.e. around Z
@@ -153,7 +153,7 @@ class RotationMatrix : virtual public Rotator<RotationMatrix<num_type>, num_type
       *this = rot;
     }
     template <typename other_num_type>
-    RotationMatrix(other_num_type angle, Vector3<other_num_type>& axis) {
+    RotationMatrix(other_num_type angle, const Vector3<other_num_type>& axis) {
       other_num_type c = cos(angle);
       other_num_type s = sin(angle);
       other_num_type mag = axis.magnitude();
@@ -171,20 +171,21 @@ class RotationMatrix : virtual public Rotator<RotationMatrix<num_type>, num_type
       matrix[2][1] = axis.y * axis.z * c_1 / mag + axis.x * s;
       matrix[2][2] = mag * c + axis.z * axis.z * c_1 / mag;
     }
+    
     // Convertors
     template <typename other_num_type>
-    RotationMatrix(AngleAxisRotator<other_num_type>& aar) : RotationMatrix(aar.angle, aar.axis) {}
+    RotationMatrix(const AngleAxisRotator<other_num_type>& aar) : RotationMatrix(aar.angle, aar.axis) {}
     template <typename other_num_type>
-    operator AngleAxisRotator<other_num_type>() {
+    operator AngleAxisRotator<other_num_type>() const {
       // TODO : improve the function, you know it can be
       other_num_type e_val, angle;
       
       // Eigenvalue is simply the 'magnitude' of the rotation
       e_val = sqrt(matrix[0][0] * matrix[0][0] + matrix[1][0] * matrix[1][0] + matrix[2][0] * matrix[2][0]);
       
-      Vector3<other_num_type> e_vec, v1 = Vector3(matrix[0][0] - e_val, matrix[0][1], matrix[0][2]),
-                                     v2 = Vector3(matrix[1][0], matrix[1][1] - e_val, matrix[1][2]),
-                                     v3 = Vector3(matrix[2][0], matrix[2][1], matrix[2][2] - e_val);
+      Vector3<other_num_type> e_vec, v1 = Vector3<other_num_type>(matrix[0][0] - e_val, matrix[0][1], matrix[0][2]),
+                                     v2 = Vector3<other_num_type>(matrix[1][0], matrix[1][1] - e_val, matrix[1][2]),
+                                     v3 = Vector3<other_num_type>(matrix[2][0], matrix[2][1], matrix[2][2] - e_val);
       // ERR: MAGIC NUMBER ALERT
       // Check to see if v1 is approximately zero
       if (v1.sqrMagnitude() > 0.000001 and v2.sqrMagnitude() > 0.000001) {
@@ -207,7 +208,7 @@ class RotationMatrix : virtual public Rotator<RotationMatrix<num_type>, num_type
           angle *= -1;
       }
       
-      return AngleAxisRotator(angle, e_vec.setMagnitude(e_val));
+      return AngleAxisRotator<other_num_type>(angle, e_vec.setMagnitude(e_val));
     }
     
     // Identity element
@@ -260,9 +261,7 @@ template <typename num_type> const RotationMatrix<num_type> RotationMatrix<num_t
 template <typename num_type = float>
 class QuaternionRotator : virtual public Rotator<QuaternionRotator<num_type>, num_type>, public Quaternion<num_type> {
   public :
-    QuaternionRotator() {
-      Quaternion(1, 0, 0, 0);
-    }
+    QuaternionRotator() : Quaternion<num_type>(1, 0, 0, 0){}
     operator Quaternion<num_type>() const {
       return Quaternion<num_type>(this->w,this->x,this->y,this->z);
     }
@@ -297,13 +296,13 @@ class QuaternionRotator : virtual public Rotator<QuaternionRotator<num_type>, nu
     template <typename other_num_type>
     QuaternionRotator(const RotationMatrix<other_num_type>& rot_mat) : QuaternionRotator(AngleAxisRotator<num_type>(rot_mat)) {}
     template <typename other_num_type>
-    operator AngleAxisRotator<other_num_type>() {
+    operator AngleAxisRotator<other_num_type>() const {
       num_type mag = this->magnitude();
       num_type half_angle = acos(this->w / mag);
-      return AngleAxisRotator<num_type>(2 * half_angle, Vector3(this->x, this->y, this->z) * mag / sin(half_angle));
+      return AngleAxisRotator<num_type>(2 * half_angle, Vector3<num_type>(this->x, this->y, this->z) * mag / sin(half_angle));
     }
     template <typename other_num_type>
-    operator RotationMatrix<other_num_type>() {
+    operator RotationMatrix<other_num_type>() const {
       return RotationMatrix<num_type>(AngleAxisRotator<num_type>(*this));
     }
     
@@ -317,11 +316,14 @@ class QuaternionRotator : virtual public Rotator<QuaternionRotator<num_type>, nu
                                       * (Quaternion<num_type>)~(*this);
       return Vector3<num_type>(fin_vector.x, fin_vector.y, fin_vector.z);
     }
+    QuaternionRotator<num_type> normalized() const {
+      return Quaternion<num_type>::normalized();
+    }
     QuaternionRotator<num_type> inverse() const {
       return Quaternion<num_type>::inverse();
     }
     QuaternionRotator<num_type> compose(const QuaternionRotator<num_type>& q) const {
-      return Quaternion(q) * Quaternion(*this);
+      return Quaternion<num_type>(q) * Quaternion<num_type>(*this);
     }
     QuaternionRotator<num_type> rotateFromTo(const Vector3<num_type>& vec1, const Vector3<num_type>& vec2) const {
       return QuaternionRotator<num_type>(vec1.angleTo(vec2), vec1.crossProduct(vec2).normalized());

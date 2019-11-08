@@ -31,7 +31,7 @@ class Complex {
     bool equals(const Complex<other_num_type>& z) const {
       return re == z.re and im == z.im;
     }
-    operator bool const () {
+    operator bool() const{
       return re == num_type(0)
              and im == num_type(0);
     }
