@@ -9,7 +9,7 @@ int main() {
   rot = rot.normalized();
   Vector3<long double> vec = Vector3(2,3,4);
   
-  vec = (RotationMatrix<long double>)(rot) * vec;
+  vec = (RotationMatrix<long double>)rot * vec;
   cout << "vec = ";
   for (int i = 0; i < 3; ++i)
     cout << setprecision(10) << vec[i] << ", ";
